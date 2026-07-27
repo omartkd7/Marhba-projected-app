@@ -1,5 +1,7 @@
 # Marhba — Application d'authentification complète
 
+![Marhba banner](assets/splash-banner.png)
+
 > **Marhba** signifie « bienvenue » en darija.
 > Application mobile minimaliste démontrant le **circuit d'authentification complet**, du formulaire mobile jusqu'à la base PostgreSQL, avec **double protection des routes** : middlewares côté backend, `Stack.Protected` côté frontend.
 
