@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+.expo
 
 # Dependencies
 *node_modules/
