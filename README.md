@@ -56,6 +56,8 @@ marhba/
 │   │   └── authController.ts    # register / login / getMe
 │   ├── routes/
 │   │   └── authRoutes.ts
+│   ├── types/
+│   │   └── express.d.ts         # Augmente Request avec req.user
 │   ├── postman/
 │   │   └── marhba.postman_collection.json
 │   ├── tsconfig.json
