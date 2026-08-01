@@ -279,13 +279,25 @@ Authorization: Bearer <token>
 | `validateRegister` | Vérifie `fullName`, `email` valide, `password` ≥ 6 caractères → sinon `400`. |
 | `validateLogin` | Vérifie la présence et le format des champs → sinon `400`. |
 | `authenticate` | Lit `Authorization: Bearer <token>`, vérifie le JWT, attache `req.user` → sinon `401`. |
-| `errorHandler` | Middleware d'erreur global (4 paramètres), monté en dernier, renvoie `{ "error": "..." }`. |
+| `errorHandler` | Middleware d'erreur global (4 paramètres `(err, req, res, next)`), monté **après** toutes les routes, renvoie toujours du JSON — jamais la page HTML par défaut d'Express. |
 
 **Ordre de montage dans `server.ts` :**
 
 ```
 logger  →  routes (validate → authenticate → controller)  →  errorHandler
 ```
+
+> ⚠️ `errorHandler` doit être monté **après** `app.use("/api/auth", authRoutes)`. Express ne saute vers un error handler que s'il est plus loin dans la pile que la route qui a fait `next(err)` — un `errorHandler` monté avant les routes ne capture donc jamais leurs erreurs.
+
+Les controllers ne gèrent jamais l'erreur eux-mêmes — ils font `next(error)` et laissent `errorHandler` décider de la réponse. Ce middleware distingue plusieurs cas via `err.name` :
+
+| `err.name` | Status | Réponse |
+|---|---|---|
+| `SequelizeUniqueConstraintError` | `409` | `{ "error": "Cette valeur est déjà utilisée" }` |
+| `SequelizeValidationError` | `400` | `{ "error": "<message de validation>" }` |
+| `JsonWebTokenError` | `401` | `{ "error": "Token invalide" }` |
+| `TokenExpiredError` | `401` | `{ "error": "Session expirée, reconnectez-vous" }` |
+| Autre | `err.status \|\| 500` | `{ "error": "Erreur serveur" }` (message générique si `500`) |
 
 > ⚠️ La vérification du token vit **uniquement** dans le middleware `authenticate`.
 > Les controllers ne contiennent que la logique métier.
