@@ -44,22 +44,23 @@
 marhba/
 ├── backend/
 │   ├── config/
-│   │   └── database.js          # Instance Sequelize
+│   │   └── database.ts          # Instance Sequelize
 │   ├── models/
-│   │   └── User.js              # Modèle User
+│   │   └── User.ts              # Modèle User
 │   ├── middlewares/
-│   │   ├── logger.js            # Log global (méthode + URL + timestamp)
-│   │   ├── validate.js          # validateRegister / validateLogin
-│   │   ├── authenticate.js      # Vérification du JWT → req.user
-│   │   └── errorHandler.js      # Gestion d'erreurs (4 paramètres)
+│   │   ├── logger.ts            # Log global (méthode + URL + timestamp)
+│   │   ├── validate.ts          # validateRegister / validateLogin
+│   │   ├── authenticate.ts      # Vérification du JWT → req.user
+│   │   └── errorHandler.ts      # Gestion d'erreurs (4 paramètres)
 │   ├── controllers/
-│   │   └── authController.js    # register / login / getMe
+│   │   └── authController.ts    # register / login / getMe
 │   ├── routes/
-│   │   └── authRoutes.js
+│   │   └── authRoutes.ts
 │   ├── postman/
 │   │   └── marhba.postman_collection.json
+│   ├── tsconfig.json
 │   ├── .env.example
-│   └── server.js
+│   └── server.ts
 │
 ├── mobile/
 │   ├── app/
@@ -83,10 +84,14 @@ marhba/
 ## Prérequis
 
 - Node.js ≥ 18
-- PostgreSQL ≥ 14 (service démarré)
+- PostgreSQL ≥ 14 — via Docker (recommandé) ou installation locale
 - npm ou yarn
 - Application **Expo Go** sur le téléphone (ou un émulateur Android / iOS)
 - Le téléphone et l'ordinateur doivent être sur **le même réseau Wi-Fi**
+
+> ⚠️ **Conflits de port fréquents sur macOS** :
+> - Le port `5000` est souvent occupé par le récepteur AirPlay de macOS (Control Center) → le backend tourne par défaut sur `5001`.
+> - Si un PostgreSQL est déjà installé en local (Homebrew, etc.) en plus du conteneur Docker, les deux vont se disputer le port `5432`. Dans ce cas, publiez le conteneur sur un autre port (ex. `5433`) et mettez à jour `DB_PORT` dans `.env` en conséquence.
 
 ---
 
@@ -98,6 +103,23 @@ npm install
 ```
 
 ### 1. Créer la base de données
+
+Avec Docker (recommandé) :
+
+```bash
+docker run -d --name marhba-postgres \
+  -e POSTGRES_USER=root \
+  -e POSTGRES_PASSWORD=2026 \
+  -e POSTGRES_DB=marhba \
+  -p 5433:5432 \
+  -v marhba_postgres_data:/var/lib/postgresql/data \
+  postgres:16
+
+# les lancements suivants :
+docker start marhba-postgres
+```
+
+Ou avec un PostgreSQL installé en local :
 
 ```bash
 createdb marhba_db
@@ -116,12 +138,15 @@ Remplir `.env` avec vos vraies valeurs (voir la section [Variables d'environneme
 ### 3. Lancer le serveur
 
 ```bash
-npm run dev     # développement (nodemon)
-npm start       # production
+npm run dev     # développement — tsx en mode watch (auto-reload)
+npm run build   # compile le TypeScript dans dist/
+npm start       # production — exécute dist/server.js
 ```
 
-Le serveur démarre sur `http://localhost:5000`.
+Le serveur démarre sur `http://localhost:5001` (voir `PORT` dans `.env`).
 `sequelize.sync()` crée automatiquement la table `users` au premier lancement.
+
+> Ne jamais lancer `node server.ts` directement — Node ne comprend pas TypeScript nativement. Toujours passer par `npm run dev`, `npx tsx server.ts`, ou par l'étape de build.
 
 ---
 
@@ -138,7 +163,7 @@ Dans `services/api.js`, remplacer l'IP par **l'adresse IP locale de votre machin
 
 ```js
 const api = axios.create({
-  baseURL: "http://192.168.1.XX:5000/api",
+  baseURL: "http://192.168.1.XX:5001/api",
 });
 ```
 
@@ -169,11 +194,11 @@ Le fichier `backend/.env.example` est fourni sans les vraies valeurs.
 
 | Variable | Description | Exemple |
 |---|---|---|
-| `PORT` | Port du serveur Express | `5000` |
+| `PORT` | Port du serveur Express | `5001` (le `5000` entre souvent en conflit avec AirPlay sur macOS) |
 | `DB_HOST` | Hôte PostgreSQL | `localhost` |
-| `DB_PORT` | Port PostgreSQL | `5432` |
-| `DB_NAME` | Nom de la base | `marhba_db` |
-| `DB_USER` | Utilisateur PostgreSQL | `postgres` |
+| `DB_PORT` | Port PostgreSQL | `5433` si Docker cohabite avec un PostgreSQL local (`5432` sinon) |
+| `DB_NAME` | Nom de la base | `marhba` |
+| `DB_USER` | Utilisateur PostgreSQL | `root` |
 | `DB_PASSWORD` | Mot de passe PostgreSQL | `votre_mot_de_passe` |
 | `JWT_SECRET` | Secret de signature des JWT | chaîne longue et aléatoire |
 | `JWT_EXPIRES_IN` | Durée de validité du token | `7d` |
@@ -182,7 +207,7 @@ Le fichier `backend/.env.example` est fourni sans les vraies valeurs.
 
 ## API — Endpoints
 
-Base URL : `http://localhost:5000/api`
+Base URL : `http://localhost:5001/api`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -254,7 +279,7 @@ Authorization: Bearer <token>
 | `authenticate` | Lit `Authorization: Bearer <token>`, vérifie le JWT, attache `req.user` → sinon `401`. |
 | `errorHandler` | Middleware d'erreur global (4 paramètres), monté en dernier, renvoie `{ "error": "..." }`. |
 
-**Ordre de montage dans `server.js` :**
+**Ordre de montage dans `server.ts` :**
 
 ```
 logger  →  routes (validate → authenticate → controller)  →  errorHandler

@@ -9,3 +9,6 @@
 
 # Logs
 npm-debug.log*
+
+# Build output
+backend/dist/
