@@ -68,12 +68,14 @@ marhba/
 │   ├── app/
 │   │   ├── _layout.jsx          # Stack.Protected (guards)
 │   │   ├── (auth)/
+│   │   │   ├── index.jsx        # Redirige vers /login
 │   │   │   ├── login.jsx
 │   │   │   └── register.jsx
 │   │   └── (app)/
+│   │       ├── index.jsx        # Redirige vers /home
 │   │       └── home.jsx
 │   ├── services/
-│   │   └── api.js               # Instance Axios + intercepteurs
+│   │   └── api.js               # Instance Axios + intercepteurs + détection auto de l'IP
 │   ├── store/
 │   │   └── useAuthStore.js      # Zustand
 │   └── app.json
@@ -88,8 +90,8 @@ marhba/
 - Node.js ≥ 18
 - PostgreSQL ≥ 14 — via Docker (recommandé) ou installation locale
 - npm ou yarn
-- Application **Expo Go** sur le téléphone (ou un émulateur Android / iOS)
-- Le téléphone et l'ordinateur doivent être sur **le même réseau Wi-Fi**
+- Application **Expo Go** sur le téléphone (ou un émulateur Android / iOS) — doit correspondre au **SDK 54** (version installée dans `mobile/package.json`). Un décalage de SDK entre Expo Go et le projet empêche l'app de se lancer.
+- Le téléphone et l'ordinateur doivent être sur **le même réseau Wi-Fi**, et ce réseau ne doit pas isoler les appareils entre eux (fréquent sur les réseaux invités / certains routeurs mesh — sinon `Network Error` malgré le même Wi-Fi)
 
 > ⚠️ **Conflits de port fréquents sur macOS** :
 > - Le port `5000` est souvent occupé par le récepteur AirPlay de macOS (Control Center) → le backend tourne par défaut sur `5001`.
@@ -159,25 +161,17 @@ cd mobile
 npm install
 ```
 
-### 1. Configurer l'adresse de l'API
+### 1. Adresse de l'API — automatique
 
-Dans `services/api.js`, remplacer l'IP par **l'adresse IP locale de votre machine** — `localhost` ne fonctionne pas depuis un téléphone physique.
+`services/api.js` détecte automatiquement l'IP locale de la machine via `Constants.expoConfig.hostUri` — la même IP qu'Expo utilise déjà pour connecter le téléphone au bundler Metro. Pas besoin de la configurer à la main, et elle reste correcte même si le réseau Wi-Fi change (juste relancer `npx expo start`).
 
 ```js
-const api = axios.create({
-  baseURL: "http://192.168.1.XX:5001/api",
-});
+const hostUri = Constants.expoConfig?.hostUri;   // ex. "192.168.1.22:8081"
+const host = hostUri?.split(":")[0];             // "192.168.1.22"
+baseURL: `http://${host}:5001/api`
 ```
 
-Trouver son IP locale :
-
-```bash
-# macOS / Linux
-ipconfig getifaddr en0     # ou : hostname -I
-
-# Windows
-ipconfig                   # → "Adresse IPv4"
-```
+> Cette détection ne fonctionne qu'en mode dev (`npx expo start` / Expo Go). Une vraie build standalone (App Store / Play Store) aura besoin d'une URL de backend en dur, configurée séparément.
 
 ### 2. Lancer l'application
 
@@ -331,6 +325,8 @@ Dans `app/_layout.jsx`, les groupes de routes sont gardés par l'état d'authent
   </Stack.Protected>
 </Stack>
 ```
+
+> ⚠️ Chaque groupe (`(auth)`, `(app)`) a besoin de son propre `index.jsx` (qui redirige vers `/login` ou `/home`). Sans lui, Expo Router ne sait pas quel écran afficher en premier quand le groupe est monté → écran vide/route introuvable au démarrage.
 
 **Comportements attendus**
 
