@@ -21,8 +21,12 @@ const useAuthStore = create((set) => ({
   },
 
   logout: async () => {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
     set({ user: null, token: null, isAuthenticated: false });
+    try {
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+    } catch {
+      // l'état est déjà réinitialisé — un échec ici ne doit pas bloquer la déconnexion
+    }
   },
 
   restoreSession: async () => {
