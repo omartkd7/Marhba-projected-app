@@ -33,7 +33,7 @@
 | Couche | Technologies |
 |---|---|
 | **Backend** | Node.js, Express, PostgreSQL, Sequelize, bcrypt, jsonwebtoken, dotenv |
-| **Frontend** | Expo, Expo Router, Axios, Zustand, expo-secure-store |
+| **Frontend** | Expo (SDK 54), Expo Router, Axios, Zustand, expo-secure-store, @expo-google-fonts/plus-jakarta-sans, @expo/vector-icons |
 | **Outils** | Postman, Git / GitHub, Jira |
 
 ---
@@ -66,14 +66,19 @@ marhba/
 │
 ├── mobile/
 │   ├── app/
-│   │   ├── _layout.jsx          # Stack.Protected (guards)
+│   │   ├── _layout.jsx          # Splash + chargement fonts/session + Stack.Protected (guards)
 │   │   ├── (auth)/
-│   │   │   ├── index.jsx        # Redirige vers /login
-│   │   │   ├── login.jsx
+│   │   │   ├── _layout.jsx      # Stack interne du groupe (auth)
+│   │   │   ├── index.jsx        # Écran Login (= route par défaut du groupe)
 │   │   │   └── register.jsx
 │   │   └── (app)/
-│   │       ├── index.jsx        # Redirige vers /home
-│   │       └── home.jsx
+│   │       ├── _layout.jsx      # Stack interne du groupe (app)
+│   │       └── index.jsx        # Écran Home (= route par défaut du groupe)
+│   ├── assets/
+│   │   ├── logo.png             # Icône Marhba (exportée de Figma)
+│   │   └── register-hero.png    # Photo bannière de l'écran Inscription
+│   ├── constants/
+│   │   └── theme.js             # Design tokens (couleurs, spacing, radius, polices) — issus de Figma
 │   ├── services/
 │   │   └── api.js               # Instance Axios + intercepteurs + détection auto de l'IP
 │   ├── store/
@@ -326,16 +331,18 @@ Dans `app/_layout.jsx`, les groupes de routes sont gardés par l'état d'authent
 </Stack>
 ```
 
-> ⚠️ Chaque groupe (`(auth)`, `(app)`) a besoin de son propre `index.jsx` (qui redirige vers `/login` ou `/home`). Sans lui, Expo Router ne sait pas quel écran afficher en premier quand le groupe est monté → écran vide/route introuvable au démarrage.
+> ⚠️ Chaque groupe (`(auth)`, `(app)`) a besoin d'un écran nommé **`index.jsx`** — c'est lui que Expo Router affiche pour le chemin racine (`/`), aussi bien à l'ouverture à froid de l'app (scan du QR code) qu'après un changement d'état (ex. déconnexion qui remonte le groupe `(auth)`).
+> Ne pas utiliser un composant `<Redirect>` séparé pour ça : c'était l'approche initiale, et elle provoquait un écran **« Unmatched Route »** au démarrage à froid (le composant `<Redirect>` ne résout que la navigation *après* montage, pas l'URL racine elle-même) ainsi que des crashs intermittents lors du remontage déclenché par `Stack.Protected`. Nommer directement l'écran `index.jsx` évite ces deux problèmes.
 
 **Comportements attendus**
 
 | Situation | Résultat |
 |---|---|
-| Non connecté → `/home` | Redirection vers `/login` |
-| Connecté → `/login` | Redirection vers `/home` |
-| Après login / register réussi | Redirection automatique vers Accueil |
-| Après déconnexion | Retour automatique à Connexion |
+| Non connecté → accède à `(app)` | Impossible : le groupe n'est même pas monté |
+| Connecté → accède à `(auth)` | Impossible : le groupe n'est même pas monté |
+| Après login / register réussi | Bascule automatique vers Accueil (`(app)/index.jsx`) |
+| Après déconnexion | Bascule automatique vers Connexion (`(auth)/index.jsx`) |
+| État incohérent (`isAuthenticated: true` sans `user`) | `_layout.jsx` détecte le cas et force un `logout()` automatique, pour ne jamais laisser l'app bloquée sur un écran cassé |
 
 ### Axios — instance et intercepteurs
 
