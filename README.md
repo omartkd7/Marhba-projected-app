@@ -1,6 +1,15 @@
 # Marhba — Application d'authentification complète
 
-![Marhba banner](assets/splash-banner.png)
+![Marhba banner](assets/repo-banner.png)
+
+### A Secure Authentication Mobile Application built with Express, PostgreSQL, Expo & JWT
+
+![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-Backend-000000?style=for-the-badge&logo=express&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Expo](https://img.shields.io/badge/Expo-Mobile-000020?style=for-the-badge&logo=expo&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-Authentication-D97742?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+![Zustand](https://img.shields.io/badge/Zustand-State_Management-8B3A3A?style=for-the-badge)
 
 > **Marhba** signifie « bienvenue » en darija.
 > Application mobile minimaliste démontrant le **circuit d'authentification complet**, du formulaire mobile jusqu'à la base PostgreSQL, avec **double protection des routes** : middlewares côté backend, `Stack.Protected` côté frontend.
